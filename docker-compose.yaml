@@ -1,0 +1,47 @@
+version: '3.12'
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_data:/root/.ollama
+    # command: >
+    #   ollama pull nomic-embed-text:latest &&
+    #   ollama serve
+    # command: serve  # Simplify the command to just serve models available
+    environment:
+      - MODELS=nomic-embed-text:latest
+      - OLLAMA_HOST=http://ollama:11434
+
+  # embed:
+  #   image: ghcr.io/nomic-ai/nomic-embed-text:latest
+  #   ports:
+  #     - '5555:5555'
+
+  fastapi:
+    build:
+      context: ./SNOW_RAG
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./fastapi:/app
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  nextjs:
+    build:
+      context: ./SNOW_RAG_FRONT/snow_rag_front
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./nextjs:/app
+    depends_on:
+      - fastapi
+    environment:
+      - NEXT_PUBLIC_FASTAPI_URL=http://fastapi:8000
+
+volumes:
+  ollama_data:
